@@ -20,6 +20,7 @@ import MultitouchSupport
   private static let allowMoreFingers = config.allowMoreFingers
   private static let maxDistanceDelta = config.maxDistanceDelta
   private static let maxTimeDelta = config.maxTimeDelta
+  private static let maxFingerLandingSpread = config.maxFingerLandingSpread
 
   private var maybeMiddleClick = false
   private var touchStartTime: Date?
@@ -29,14 +30,18 @@ import MultitouchSupport
 
   private let touchCallback: MTFrameCallbackFunction = {
     _, data, nFingers, _, _ in
-    guard !AppUtils.isIgnoredAppBundle() else { return }
+    guard !AppUtils.isIgnoredAppBundle() else {
+      MiddleDrag.shared.cancel()
+      return
+    }
 
     let state = GlobalState.shared
-
-    state.threeDown =
-    allowMoreFingers ? nFingers >= fingersQua : nFingers == fingersQua
-
     let handler = TouchHandler.shared
+
+    let isFingerCountAllowed = allowMoreFingers ? nFingers >= fingersQua : nFingers == fingersQua
+    state.threeDown = handler.didFingersLandTogether(
+      nFingers: nFingers, isFingerCountAllowed: isFingerCountAllowed
+    ) && isFingerCountAllowed
 
     MiddleDrag.shared.handleFrame(
       data: data, nFingers: nFingers, fingersQua: fingersQua,
@@ -69,12 +74,31 @@ import MultitouchSupport
       handler.resetMiddleClick()
     }
 
-    let isCurrentFingersQuaAllowed = allowMoreFingers ? nFingers >= fingersQua : nFingers == fingersQua
-    guard isCurrentFingersQuaAllowed else { return }
+    guard state.threeDown else { return }
 
     handler.processTouches(data: data, nFingers: nFingers)
 
     return
+  }
+
+  private var firstFingerLandedTime: Date?
+  private var wasFingerCountAllowed = false
+  private var fingersLandedTogether = false
+
+  /// A finger joining fingers that were already resting (e.g. two resting fingers and a third that presses to right-click)
+  /// isn't a middle click, so all fingers must land within `maxFingerLandingSpread` of the first one
+  private func didFingersLandTogether(nFingers: Int32, isFingerCountAllowed: Bool) -> Bool {
+    if nFingers == 0 {
+      firstFingerLandedTime = nil
+    } else if firstFingerLandedTime == nil {
+      firstFingerLandedTime = Date()
+    }
+
+    if isFingerCountAllowed && !wasFingerCountAllowed, let firstFingerLandedTime {
+      fingersLandedTogether = -firstFingerLandedTime.timeIntervalSinceNow <= Self.maxFingerLandingSpread
+    }
+    wasFingerCountAllowed = isFingerCountAllowed
+    return fingersLandedTogether
   }
 
   private func processTouches(data: UnsafePointer<MTTouch>?, nFingers: Int32) {

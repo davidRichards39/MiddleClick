@@ -24,7 +24,7 @@ import MultitouchSupport
     isFingerCountAllowed: Bool, tapToClick: Bool
   ) {
     guard isFingerCountAllowed, let data else {
-      reset()
+      cancel()
       return
     }
 
@@ -55,7 +55,8 @@ import MultitouchSupport
     movePointer(by: centroid - lastCentroid)
   }
 
-  private func reset() {
+  /// Ends a tap drag in progress and forgets the current touch
+  func cancel() {
     if isTapDragging {
       isTapDragging = false
       Self.postMouseEvent(type: .otherMouseUp, location: Self.pointerLocation)
