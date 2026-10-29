@@ -18,5 +18,11 @@ final class Config: ConfigCore {
 
   @UserDefault var tapToClick = SystemPermissions.getIsSystemTapToClickEnabled
 
+  /// With tap to click, sliding the fingers without pressing holds the middle button
+  @UserDefault var tapToDrag = true
+
+  /// Pointer distance per finger distance while middle-dragging; 1 maps the trackpad onto the screen
+  @UserDefault var middleDragSpeed: Float = 1.0
+
   @UserDefault var ignoredAppBundles = Set<String>()
 }

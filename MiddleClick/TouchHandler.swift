@@ -38,6 +38,11 @@ import MultitouchSupport
 
     let handler = TouchHandler.shared
 
+    MiddleDrag.shared.handleFrame(
+      data: data, nFingers: nFingers, fingersQua: fingersQua,
+      isFingerCountAllowed: state.threeDown, tapToClick: handler.tapToClick
+    )
+
     guard handler.tapToClick else { return }
 
     guard nFingers != 0 else {
