@@ -21,6 +21,13 @@ extension Controller {
       event.setIntegerValueField(.mouseEventButtonNumber, value: kCGMouseButtonCenter)
     }
 
+    // Keep the button held as middle while the fingers move, so the click becomes a middle-drag
+    if state.wasThreeDown && (type == .leftMouseDragged || type == .rightMouseDragged) {
+      event.type = .otherMouseDragged
+
+      event.setIntegerValueField(.mouseEventButtonNumber, value: kCGMouseButtonCenter)
+    }
+
     if state.wasThreeDown && (type == .leftMouseUp || type == .rightMouseUp) {
       state.wasThreeDown = false
       event.type = .otherMouseUp
