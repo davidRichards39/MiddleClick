@@ -9,7 +9,9 @@ enum AppUtils {
   /// in which case a middle-click will pass through to an "Ignored" application.
   @MainActor static func isIgnoredAppBundle(_ focusedApp: NSRunningApplication? = getFocusedApp()) -> Bool {
     guard let bundleId = focusedApp?.bundleIdentifier else { return false }
-    return GlobalState.shared.ignoredAppBundlesCache.contains(bundleId)
+    let state = GlobalState.shared
+    if !state.onlyAppBundlesCache.isEmpty && !state.onlyAppBundlesCache.contains(bundleId) { return true }
+    return state.ignoredAppBundlesCache.contains(bundleId)
   }
 
   @MainActor static func warningAlert(title: String, message: String) -> NSAlert {

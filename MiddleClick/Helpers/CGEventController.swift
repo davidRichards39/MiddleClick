@@ -26,7 +26,8 @@ class CGEventController {
       place: .headInsertEventTap,
       options: .defaultTap,
       eventsOfInterest: .from(
-        .leftMouseDown, .leftMouseUp, .rightMouseDown, .rightMouseUp
+        .leftMouseDown, .leftMouseUp, .rightMouseDown, .rightMouseUp,
+        .leftMouseDragged, .rightMouseDragged
       ),
       callback: callback,
       userInfo: nil

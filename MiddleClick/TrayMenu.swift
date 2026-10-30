@@ -3,7 +3,7 @@ import AppKit
 
 @MainActor final class TrayMenu: NSObject {
   private let config = Config.shared
-  private var infoItem, tapToClickItem, accessibilityPermissionStatusItem, accessibilityPermissionActionItem, ignoredAppItem, launchAtLoginItem: NSMenuItem!
+  private var infoItem, tapToClickItem, accessibilityPermissionStatusItem, accessibilityPermissionActionItem, ignoredAppItem, onlyAppItem, launchAtLoginItem: NSMenuItem!
   private var fingerCountControl: FingerCountControl!
   private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
   var isStatusItemVisible: Bool {
@@ -63,6 +63,8 @@ import AppKit
         action: #selector(ignoreApp),
         target: self
       )
+    onlyAppItem = menu.addItem(
+      withTitle: "Only in focused app", action: #selector(onlyInApp), target: self)
     menu.addSeparator()
 
     infoItem = menu.addItem(withTitle: "")
@@ -363,14 +365,23 @@ extension TrayMenu: NSMenuDelegate {
     let focusedApp = AppUtils.getFocusedApp()
     if let focusedAppName = focusedApp?.localizedName {
       ignoredAppItem.title = "Ignore " + focusedAppName
-      ignoredAppItem.state = AppUtils.isIgnoredAppBundle(focusedApp) ? .on : .off
+      onlyAppItem.title = "Only in " + focusedAppName
     }
+    let bundleId = focusedApp?.bundleIdentifier ?? ""
+    ignoredAppItem.state = config.ignoredAppBundles.contains(bundleId) ? .on : .off
+    onlyAppItem.state = config.onlyAppBundles.contains(bundleId) ? .on : .off
   }
 
   @objc private func ignoreApp() {
     guard let focusedBundleID = AppUtils.getFocusedApp()?.bundleIdentifier else { return }
 
     config.ignoredAppBundles.formSymmetricDifference([focusedBundleID])
+  }
+
+  @objc private func onlyInApp() {
+    guard let focusedBundleID = AppUtils.getFocusedApp()?.bundleIdentifier else { return }
+
+    config.onlyAppBundles.formSymmetricDifference([focusedBundleID])
   }
 }
 
