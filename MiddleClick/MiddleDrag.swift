@@ -133,8 +133,10 @@ import MultitouchSupport
     let whole = pixels.rounded(.towardZero)
     scrollRemainder = pixels - whole
 
+    // Control on the sideways scrolls too, so Java never pairs a vertical scroll with the previous event's modifiers
+    // (a sideways scroll still reads as rotate: the plugin checks for sideways before Control)
     if whole.x != 0 {
-      Self.postScrollEvent(vertical: 0, horizontal: Int32(whole.x), flags: [])
+      Self.postScrollEvent(vertical: 0, horizontal: Int32(whole.x), flags: .maskControl)
     }
     if whole.y != 0 {
       Self.postScrollEvent(vertical: Int32(whole.y), horizontal: 0, flags: .maskControl)
