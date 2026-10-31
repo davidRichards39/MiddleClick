@@ -1,12 +1,14 @@
 import CoreGraphics
 import MultitouchSupport
 
-/// Turns a three-finger slide into a middle-button drag.
+/// Turns a three-finger slide into a middle-button drag, or into scroll events when `slideToScroll` is on.
 ///
 /// macOS doesn't move the pointer while three fingers slide on the trackpad (it reads them as a gesture),
 /// so the drag movement is driven from the raw finger positions instead:
 /// - holding a three-finger click: the button is already middle (see `Controller.mouseEventHandler`), only the movement is added
 /// - tap to click: sliding three fingers without pressing holds the middle button until the fingers lift
+///
+/// In scroll mode no button is pressed and the pointer never moves: the movement is sent as scroll events instead.
 @MainActor final class MiddleDrag {
   static let shared = MiddleDrag()
   private static let config = Config.shared
@@ -18,6 +20,16 @@ import MultitouchSupport
   /// A physical click happened during this touch, so its slide must not turn into a tap drag afterwards
   private var tapDragBlocked = false
   private var isTapDragging = false
+  /// Sub-pixel scroll left over from earlier frames, so slow slides still add up
+  private var scrollRemainder: SIMD2<Float> = .zero
+  private var scrollAxis: ScrollAxis?
+  private var axisLockTravel: SIMD2<Float> = .zero
+
+  private enum ScrollAxis { case horizontal, vertical }
+
+  /// Finger travel (fraction of the trackpad) before the axis lock picks a direction
+  private static let axisLockThreshold: Float = 0.01
+  private static let scrollPixelsPerTrackpad: Float = 800
 
   func handleFrame(
     data: UnsafePointer<MTTouch>?, nFingers: Int32, fingersQua: Int,
@@ -48,19 +60,30 @@ import MultitouchSupport
       guard centroid.delta(to: tapStartCentroid) >= Self.config.maxDistanceDelta else { return }
 
       isTapDragging = true
-      Self.postMouseEvent(type: .otherMouseDown, location: Self.pointerLocation)
+      if !Self.config.slideToScroll {
+        Self.postMouseEvent(type: .otherMouseDown, location: Self.pointerLocation)
+      }
     }
 
     guard let lastCentroid else { return }
-    movePointer(by: centroid - lastCentroid)
+    if Self.config.slideToScroll {
+      scroll(by: centroid - lastCentroid)
+    } else {
+      movePointer(by: centroid - lastCentroid)
+    }
   }
 
   /// Ends a tap drag in progress and forgets the current touch
   func cancel() {
     if isTapDragging {
       isTapDragging = false
-      Self.postMouseEvent(type: .otherMouseUp, location: Self.pointerLocation)
+      if !Self.config.slideToScroll {
+        Self.postMouseEvent(type: .otherMouseUp, location: Self.pointerLocation)
+      }
     }
+    scrollRemainder = .zero
+    scrollAxis = nil
+    axisLockTravel = .zero
     lastCentroid = nil
     lastFingerCount = 0
     tapStartCentroid = nil
@@ -82,6 +105,48 @@ import MultitouchSupport
       y: min(max(current.y + dy, bounds.minY), bounds.maxY - 1)
     )
     Self.postMouseEvent(type: .otherMouseDragged, location: target, delta: (dx, dy))
+  }
+
+  private func scroll(by delta: SIMD2<Float>) {
+    guard delta.isNonZero else { return }
+
+    var delta = delta
+    if Self.config.slideScrollAxisLock {
+      if scrollAxis == nil {
+        axisLockTravel += delta
+        guard abs(axisLockTravel.x) + abs(axisLockTravel.y) >= Self.axisLockThreshold else { return }
+        scrollAxis = abs(axisLockTravel.x) >= abs(axisLockTravel.y) ? .horizontal : .vertical
+        delta = axisLockTravel
+      }
+      switch scrollAxis {
+      case .horizontal: delta.y = 0
+      case .vertical: delta.x = 0
+      case nil: break
+      }
+    }
+
+    // Match a natural-scrolling two-finger swipe: fingers right scroll right, fingers up scroll down
+    let pixels = SIMD2(delta.x, -delta.y) * Self.scrollPixelsPerTrackpad * Self.config.slideScrollSpeed
+      + scrollRemainder
+    let whole = pixels.rounded(.towardZero)
+    scrollRemainder = pixels - whole
+
+    if whole.x != 0 {
+      Self.postScrollEvent(vertical: 0, horizontal: Int32(whole.x), flags: [])
+    }
+    if whole.y != 0 {
+      Self.postScrollEvent(vertical: Int32(whole.y), horizontal: 0, flags: .maskControl)
+    }
+  }
+
+  private static func postScrollEvent(vertical: Int32, horizontal: Int32, flags: CGEventFlags) {
+    let event = CGEvent(
+      scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2,
+      wheel1: vertical, wheel2: horizontal, wheel3: 0
+    )
+    event?.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+    event?.flags = flags
+    event?.post(tap: .cghidEventTap)
   }
 
   private static var pointerLocation: CGPoint { CGEvent(source: nil)?.location ?? .zero }

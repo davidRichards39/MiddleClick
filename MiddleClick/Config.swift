@@ -28,6 +28,17 @@ final class Config: ConfigCore {
   /// Pointer distance per finger distance while middle-dragging; 1 maps the trackpad onto the screen
   @UserDefault var middleDragSpeed: Float = 1.0
 
+  /// Turn three-finger slides into scroll events instead of a middle drag, so the pointer stays put.
+  /// Sideways becomes a horizontal scroll, up/down becomes a Control + vertical scroll
+  /// (what the RuneLite "Trackpad Camera" plugin reads as rotate and tilt).
+  @UserDefault var slideToScroll = true
+
+  /// Scroll pixels per full trackpad width of finger movement, before `slideScrollSpeed`
+  @UserDefault var slideScrollSpeed: Float = 1.0
+
+  /// Only scroll along the axis the slide started on, so a sideways slide doesn't also tilt
+  @UserDefault var slideScrollAxisLock = true
+
   @UserDefault var ignoredAppBundles = Set<String>()
 
   /// When not empty, MiddleClick only acts while one of these apps is focused
