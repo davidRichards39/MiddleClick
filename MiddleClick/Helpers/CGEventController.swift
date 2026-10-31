@@ -27,7 +27,7 @@ class CGEventController {
       options: .defaultTap,
       eventsOfInterest: .from(
         .leftMouseDown, .leftMouseUp, .rightMouseDown, .rightMouseUp,
-        .leftMouseDragged, .rightMouseDragged
+        .leftMouseDragged, .rightMouseDragged, .scrollWheel
       ),
       callback: callback,
       userInfo: nil

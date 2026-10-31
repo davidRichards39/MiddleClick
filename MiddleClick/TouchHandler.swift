@@ -43,6 +43,13 @@ import MultitouchSupport
       nFingers: nFingers, isFingerCountAllowed: isFingerCountAllowed
     ) && isFingerCountAllowed
 
+    if state.threeDown {
+      state.threeFingerTouch = true
+    } else if nFingers == 0 && state.threeFingerTouch {
+      state.threeFingerTouch = false
+      state.suppressScrollMomentum = true
+    }
+
     MiddleDrag.shared.handleFrame(
       data: data, nFingers: nFingers, fingersQua: fingersQua,
       isFingerCountAllowed: state.threeDown, tapToClick: handler.tapToClick

@@ -12,6 +12,10 @@ extension Controller {
     let returnedEvent = Unmanaged.passUnretained(event)
     guard !AppUtils.isIgnoredAppBundle() else { return returnedEvent }
 
+    if type == .scrollWheel {
+      return shouldDropScroll(event) ? nil : returnedEvent
+    }
+
     if state.threeDown && (type == .leftMouseDown || type == .rightMouseDown) {
       state.wasThreeDown = true
       state.threeDown = false
@@ -35,5 +39,19 @@ extension Controller {
       event.setIntegerValueField(.mouseEventButtonNumber, value: kCGMouseButtonCenter)
     }
     return returnedEvent
+  }
+
+  /// In scroll mode, macOS's own two-finger scrolls (sent while fingers land or lift unevenly, plus their momentum)
+  /// would reach the app as plain scrolls, i.e. zoom in RuneLite, so they are dropped around a three-finger touch.
+  private static func shouldDropScroll(_ event: CGEvent) -> Bool {
+    guard Config.shared.slideToScroll else { return false }
+    guard event.getIntegerValueField(.eventSourceUserData) != MiddleDrag.syntheticEventTag else { return false }
+
+    if state.threeFingerTouch { return true }
+    if event.getIntegerValueField(.scrollWheelEventMomentumPhase) != 0 {
+      return state.suppressScrollMomentum
+    }
+    state.suppressScrollMomentum = false
+    return false
   }
 }

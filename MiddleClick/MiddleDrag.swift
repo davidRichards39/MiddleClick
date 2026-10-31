@@ -30,6 +30,8 @@ import MultitouchSupport
   /// Finger travel (fraction of the trackpad) before the axis lock picks a direction
   private static let axisLockThreshold: Float = 0.01
   private static let scrollPixelsPerTrackpad: Float = 800
+  /// Marks our own scroll events, so the event tap doesn't drop them along with macOS's
+  static let syntheticEventTag: Int64 = 0x4D43_4C4B
 
   func handleFrame(
     data: UnsafePointer<MTTouch>?, nFingers: Int32, fingersQua: Int,
@@ -145,6 +147,7 @@ import MultitouchSupport
       wheel1: vertical, wheel2: horizontal, wheel3: 0
     )
     event?.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+    event?.setIntegerValueField(.eventSourceUserData, value: syntheticEventTag)
     event?.flags = flags
     event?.post(tap: .cghidEventTap)
   }
