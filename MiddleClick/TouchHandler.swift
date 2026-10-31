@@ -32,6 +32,7 @@ import MultitouchSupport
     _, data, nFingers, _, _ in
     guard !AppUtils.isIgnoredAppBundle() else {
       MiddleDrag.shared.cancel()
+      GlobalState.shared.threeFingerTouch = false
       return
     }
 
