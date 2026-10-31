@@ -6,7 +6,7 @@ extension Controller {
   private static let state = GlobalState.shared
   private static let kCGMouseButtonCenter = Int64(CGMouseButton.center.rawValue)
 
-  static let mouseEventHandler = CGEventController {
+  static let mouseEventHandler: CGEventController = CGEventController {
     _, type, event, _ in
 
     let returnedEvent = Unmanaged.passUnretained(event)
