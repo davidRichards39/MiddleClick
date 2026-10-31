@@ -16,7 +16,7 @@ class AccessibilityMonitor {
   private func startMonitoring(isTrusted: Bool) {
     timer?.invalidate()
     timer = .scheduledTimer(
-      timeInterval: isTrusted ? 5 : 0.5,
+      timeInterval: isTrusted ? 1 : 0.5,
       target: self,
       selector: #selector(self.checkAccessibility),
       userInfo: nil,

@@ -52,6 +52,12 @@ class CGEventController {
     return true
   }
 
+  /// Turns a tap back on after macOS disabled it (e.g. the callback was too slow)
+  func reenable() {
+    guard let tap = eventTap, CFMachPortIsValid(tap) else { return }
+    CGEvent.tapEnable(tap: tap, enable: true)
+  }
+
   func stop() {
     // Use guard to safely unwrap and validate the eventTap
     guard let tap = eventTap, CFMachPortIsValid(tap) else {

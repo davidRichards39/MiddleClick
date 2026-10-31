@@ -10,6 +10,20 @@ extension Controller {
     _, type, event, _ in
 
     let returnedEvent = Unmanaged.passUnretained(event)
+
+    // macOS disables a tap that stalls input, e.g. after Accessibility permission is revoked while running.
+    // Only turn it back on while still trusted; otherwise remove it so every mouse and scroll event bypasses us.
+    if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+      DispatchQueue.main.async {
+        if SystemPermissions.detectAccessibilityIsGranted(forcePrompt: false) {
+          mouseEventHandler.reenable()
+        } else {
+          mouseEventHandler.stop()
+        }
+      }
+      return returnedEvent
+    }
+
     guard !AppUtils.isIgnoredAppBundle() else { return returnedEvent }
 
     if type == .scrollWheel {
