@@ -125,8 +125,8 @@ import MultitouchSupport
       }
     }
 
-    // Match a natural-scrolling two-finger swipe: fingers right scroll right, fingers up scroll down
-    let pixels = SIMD2(delta.x, -delta.y) * Self.scrollPixelsPerTrackpad * Self.config.slideScrollSpeed
+    // Match a two-finger swipe's direction in RuneLite's camera: touch y already grows upwards like scroll y
+    let pixels = delta * Self.scrollPixelsPerTrackpad * Self.config.slideScrollSpeed
       + scrollRemainder
     let whole = pixels.rounded(.towardZero)
     scrollRemainder = pixels - whole
